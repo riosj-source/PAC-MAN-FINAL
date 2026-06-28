@@ -6,9 +6,9 @@
 #si se acaban las bolitas se reinicia todo el mapa, se suma =+ al nivel
 
 import pygame
-from CLASES import Mapa, Pacman, Blinky, Pinky, Inky, Clyde, Greenky, Cookie
-from INICIO import pantalla_selec_fantasmas, pantalla_asignar_esquinas, pantalla_inicio
-from DISPLAY import inicializar_display, dibujar_display
+from CLASES_rep_2 import Mapa, Pacman, Blinky, Pinky, Inky, Clyde, Greenky, Cookie
+from INICIO_rep_2 import pantalla_selec_fantasmas, pantalla_asignar_esquinas, pantalla_inicio
+from DISPLAY_rep_2 import inicializar_display, dibujar_display
 import os 
 
 
@@ -23,7 +23,17 @@ FPS = 60
 NEGRO = (0, 0, 0)
 BLANCO = (255, 255, 255)
 FUXIA = (255, 0, 255)
-sonido_waka = pygame.mixer.Sound(os.path.join(base_dir, "pacman-waka-waka.mp3"))
+
+pygame.mixer.init()
+pygame.mixer.set_num_channels(2)
+pygame.mixer.music.load("pacmanfondo2.mp3")
+pygame.mixer.music.set_volume(0.2)
+pygame.mixer.music.play(-1)
+
+sonido_waka = pygame.mixer.Sound("pacman-waka-waka.mp3")
+sonido_alarma = pygame.mixer.Sound("pacmanfondo2.mp3")
+canal_waka = pygame.mixer.Channel(0)
+canal_alarma = pygame.mixer.Channel(1)
 
 mapa = Mapa(os.path.join(base_dir, "mapa.txt"))
 cord_pacman, cords_ghost_house = mapa.posicion_pacman_gostHouse()  # (columna, fila)
@@ -183,10 +193,12 @@ def dibujar_mapa(ventana, mapa):
 def mover_y_comer(pacman, direccion, mapa):
     """Mueve una celda, si se puede, y luego come lo que haya en la celda."""
     if direccion is None or pacman.muerto:
+        canal_waka.stop()
         return
     se_movio = pacman.mover_pacman(direccion, mapa)
     if se_movio:
-        sonido_waka.play(0)
+        if not canal_waka.get_busy():
+            canal_waka.play(sonido_waka, -1)
         pacman.comer_pelotita(mapa)
         if pacman.comer_power_pellet(mapa):
             for f in fantasmas_elegidos:
@@ -398,12 +410,16 @@ while running:
                     indice_fase_actual = 0
                     tiempo_en_fase = 0.0
                     modo_general = 'scatter'
+        else:
+            canal_waka.stop()
 
         # FANTASMAS 
         # actualizacion del ciclo asustado 
 
         if pacman.modo_power:
             pacman.tiempo_power -= dt
+            if not canal_alarma.get_busy():
+                canal_alarma.play(sonido_alarma)
             if pacman.tiempo_power <= 0:
                 # desactivar 
                 pacman.modo_power = False 
